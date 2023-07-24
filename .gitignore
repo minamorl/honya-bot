@@ -1,0 +1,32 @@
+# Python
+__pycache__
+*.py[cod]
+*.pyd
+*.pyo
+*.pyz
+*.pickle
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# Log files
+logfile.log
+config.json
