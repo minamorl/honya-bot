@@ -45,15 +45,11 @@ async def process_gpt_response(messages):
     else:
         return "すみませんが、お答えできません。"
 
-ALLOWED_COMMANDS = ["ls", "pwd"]  # 例として、lsとpwdコマンドのみを許可
 
 async def execute_command(command):
-    if command in ALLOWED_COMMANDS:
-        stream = os.popen(command)
-        output = stream.read()
-        return output
-    else:
-        return f"Command {command} is not allowed."
+    stream = os.popen(command)
+    output = stream.read()
+    return output
 
 @client.event
 async def on_message(message):
@@ -85,9 +81,10 @@ async def on_message(message):
     await message.channel.send(response)
 
     # コマンド実行のチェック
-    match = re.search(r'.*```\n?(.+?)\n?```.*', response, re.DOTALL)
-    if match:
-        cmd = match.group(1).strip()
+    matches = re.findall(r'```?(.+?)?```', response, re.DOTALL)
+    for cmd in matches:
+        print(cmd)
+        cmd = cmd.strip()
         cmd_response = await execute_command(cmd)
         response = f"Executing command: {cmd}\n{cmd_response}"
 
