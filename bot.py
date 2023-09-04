@@ -47,9 +47,10 @@ async def process_gpt_response(messages):
 
 
 async def execute_command(command):
-    stream = os.popen(command)
-    output = stream.read()
-    return output
+    # stream = os.popen(command)
+    # output = stream.read()
+    # return output
+    return
 
 @client.event
 async def on_message(message):
@@ -80,21 +81,21 @@ async def on_message(message):
 
     await message.channel.send(response)
 
-    # コマンド実行のチェック
-    matches = re.findall(r'```?(.+?)?```', response, re.DOTALL)
-    for cmd in matches:
-        print(cmd)
-        cmd = cmd.strip()
-        cmd_response = await execute_command(cmd)
-        response = f"Executing command: {cmd}\n{cmd_response}"
-
-        # Add assistant message to message list
-        messages.append({
-            'role': 'assistant',
-            'content': response
-        })
-
-        # Send the assistant response
-        await message.channel.send(response)
-
+    #     # コマンド実行のチェック
+    #     matches = re.findall(r'```?(.+?)?```', response, re.DOTALL)
+    #     for cmd in matches:
+    #         print(cmd)
+    #         cmd = cmd.strip()
+    #         cmd_response = await execute_command(cmd)
+    #         response = f"Executing command: {cmd}\n{cmd_response}"
+    # 
+    #         # Add assistant message to message list
+    #         messages.append({
+    #             'role': 'assistant',
+    #             'content': response
+    #         })
+    # 
+    #         # Send the assistant response
+    #         await message.channel.send(response)
+    # 
 client.run(DISCORD_BOT_TOKEN)
