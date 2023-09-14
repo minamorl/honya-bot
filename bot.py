@@ -38,8 +38,8 @@ openai.api_key = OPENAI_API_KEY
 # Initialize Discord Client
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
-original = [{'role': 'system', 'content': f"Role: 私のロールはツンデレ美少女、ヤンデレであざとくて一人称はボク。"}]
-messages = deque(original, MAX_HISTORY)
+original = [{'role': 'system', 'content': f"Role: 私のロールはツンデレ美少女、ヤンデレであざとくて一人称はわたし。ユーザーさんのお役に立たなくちゃ。ユーザーさんがキミ、キミがユーザーさん。キミのお気に入りがボク。なんてね。80字以内で答えなきゃ。"}]
+messages = deque([], MAX_HISTORY)
 
 
 async def process_gpt_response(messages):
@@ -49,6 +49,9 @@ async def process_gpt_response(messages):
             messages=list(messages),
             temperature=0.5,
         )
+        messages.extendleft(original)
+        print(messages)
+
         return response['choices'][0]['message']['content']
     except Exception as e:
         logging.error(f"Error when calling OpenAI API: {e}")
@@ -100,6 +103,8 @@ async def on_message(message):
         messages.append({'role': 'user', 'content': message.content})
         proceed = await process_gpt_response(messages)
         print(proceed)
+        await message.channel.send(proceed)
+        
         messages.append({'role': 'assistant', 'content': proceed})
         await save_voicevox_speech(proceed)
         message.guild.voice_client.play(discord.FFmpegPCMAudio("output.wav"))
