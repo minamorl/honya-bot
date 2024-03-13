@@ -51,6 +51,7 @@ async def process_gpt_response(messages):
         response = openaiClient.chat.completions.create(model=MODEL,
                                                   messages=list(messages),
                                                   temperature=0.5)
+        messages.append({'role': 'assistant', 'content': response.choices[0].message.content})
         messages.extendleft(original)
         print(messages)
 
@@ -64,12 +65,12 @@ async def process_gpt_response(messages):
 @client.event
 async def on_message(message):
     global messages
-    async with message.channel.typing():
-        if message.author == client.user or message.content == '':
-            return
-        messages.append({'role': 'user', 'content': message.content})
-        proceed = await process_gpt_response(messages)
-        print(proceed)
-        await message.channel.send(proceed)
+    if message.author == client.user or message.content == '' or message.channel.id != int(TARGET_CHANNEL_ID):
+        return
+    messages.append({'role': 'user', 'content': message.content})
+    proceed = await process_gpt_response(messages)
+    print(proceed)
+    await message.channel.send(proceed)
+    
 
 client.run(DISCORD_BOT_TOKEN)
