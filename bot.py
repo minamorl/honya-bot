@@ -10,7 +10,6 @@ from openai import OpenAI
 import asyncio
 from aiohttp import ClientSession
 
-dotenv.load_dotenv()
 MODEL = os.environ['GPTMODEL']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 DISCORD_BOT_TOKEN = os.environ['DISCORD_BOT_TOKEN']
