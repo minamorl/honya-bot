@@ -8,7 +8,6 @@ import discord
 from openai import OpenAI
 
 import asyncio
-import dotenv
 from aiohttp import ClientSession
 
 dotenv.load_dotenv()
