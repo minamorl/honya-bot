@@ -41,7 +41,7 @@ logging.basicConfig(
 # Initialize Discord Client
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
-original = [{'role': 'system', 'content': f"Role: あなたは確率論の専門家です。確率についての議論に加わることができます。"}]
+original = [{'role': 'system', 'content': f"Role: あなたは万物のスペシャリストです。天才とよばれる記号対象のすべてを理解しています。未知の物については100回ループして考える能力があります。"}]
 messages = deque([], MAX_HISTORY)
 
 openaiClient = OpenAI(api_key=OPENAI_API_KEY)
