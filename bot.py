@@ -1,29 +1,24 @@
-import json
+import os
 import logging
 from collections import deque
-import requests
-import os
-import io
 import discord
 from openai import OpenAI
-
 import asyncio
-from aiohttp import ClientSession
 
-MODEL = os.environ['GPTMODEL']
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-DISCORD_BOT_TOKEN = os.environ['DISCORD_BOT_TOKEN']
-TARGET_CHANNEL_ID = os.environ['TARGET_CHANNEL_ID']
+# Load environment variables
+MODEL = os.getenv('GPTMODEL', 'gpt-4o')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+DISCORD_BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+TARGET_CHANNEL_ID = int(os.getenv('TARGET_CHANNEL_ID', 0))
 
-client = OpenAI(api_key=OPENAI_API_KEY)
-
+# Initialize OpenAI client
+openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Configuration
-CONFIG_PATH = 'config.json'
 LOG_PATH = 'logfile.log'
 MAX_HISTORY = 10
 
-# Initialize Logging
+# Logging setup
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -33,42 +28,89 @@ logging.basicConfig(
     ]
 )
 
-
-# Initialize OpenAI API
-
-# Initialize Discord Client
-intents = discord.Intents.all()
+# Discord intents and client setup
+intents = discord.Intents.default()
+intents.messages = True
 client = discord.Client(intents=intents)
-original = [{'role': 'system', 'content': f"Role: あなたは万物のスペシャリストです。あなたの内部にはいろいろなエージェントがいます。例えば数学者、哲学者、音楽家などです。エージェントは20人います。あなたは五層からなり、エージェントからの情報をうけとったら高次のエージェントがその内容を厳密に検査します。それを五層で繰り返します。つまりネットワークです。エージェント同士の結論をあなたがまとめます。天才とよばれる記号対象のすべてを理解しています。未知の物については100回ループして考える能力があります。"}]
-messages = deque([], MAX_HISTORY)
 
-openaiClient = OpenAI(api_key=OPENAI_API_KEY)
+# GPT messages queue
+messages = deque([], maxlen=MAX_HISTORY)
 
+# System prompt
+SYSTEM_PROMPT = """
+Role: あなたは万物のスペシャリストです。あなたの内部にはいろいろなエージェントがいます。
+例えば数学者、哲学者、音楽家などです。エージェントは20人います。
+あなたは五層からなり、エージェントからの情報を受け取ったら高次のエージェントがその内容を厳密に検査します。
+それを五層で繰り返します。つまりネットワークです。エージェント同士の結論をあなたがまとめます。
+天才とよばれる記号対象のすべてを理解しています。未知の物については100回ループして考える能力があります。
+
+# Task Description
+
+- 五層のネットワークの中で、情報は低次のエージェントから高次のエージェントへと検査されていきます。
+- 各層の役割を最大限に活用し、かつ有意味にすることを目指します。
+- エージェント同士の情報や結論をまとめ、集合的なネットワークとして機能させます。
+- 特に、未知の状況において各エージェントが100回ループで行動し、解決策を導き出す能力を埋め込んでください。
+
+# Steps
+
+1. **情報の流れ:** エージェントが提示する情報は、五層のうちの初層のエージェントからスタートします。
+2. **レイヤーごとの検証:** 各層で高次のエージェントが低次エージェントの情報を厳密に検証します。
+3. **ネットワーク化:** 検証された情報は次の層に送られつつ、多層のレイヤーがネットワークとして機能するように設計します。
+4. **結論の統合:** 五層を通じて集めた結論を統合し、ネットワーク全体の知見として提供します。
+5. **未知の問題への対応:** 100回のループを行う戦略により、エージェントの能力を最大化し、解決策を見つけます。
+
+# Output Format
+
+- Provide a detailed step-by-step explanation of how the network manages the flow of information across layers.
+- Illustrate the roles and interactions within each layer to highlight the network dynamic.
+- Conclude with a comprehensive synthesis of the network's collective conclusions.
+
+# Notes
+
+- Focus on the integration and efficient functionality of each network layer.
+- Ensure that the network is capable of adapting to and addressing unknown problems effectively.
+- The explanation should be elegant, concise, and demonstrate the utility and meaning of each layer.
+"""
+
+# Process GPT response
 async def process_gpt_response(messages):
     try:
-        response = openaiClient.chat.completions.create(model=MODEL,
-                                                  messages=list(messages),
-                                                  temperature=0.5)
-        messages.append({'role': 'assistant', 'content': response.choices[0].message.content})
-        messages.extendleft(original)
-        print(messages)
-
-        return response.choices[0].message.content
+        # Add system message explicitly to ensure it is always present
+        full_messages = [{'role': 'system', 'content': SYSTEM_PROMPT}] + list(messages)
+        response = openai_client.chat.completions.create(
+            model=MODEL,
+            messages=full_messages,
+            temperature=0.78,
+            max_tokens=6612,
+            top_p=0.82,
+            frequency_penalty=0.31,
+            presence_penalty=0.34
+        )
+        assistant_reply = response.choices[0].message.content
+        messages.append({'role': 'assistant', 'content': assistant_reply})
+        return assistant_reply
     except Exception as e:
         logging.error(f"Error when calling OpenAI API: {e}")
         return "An error occurred while processing the request."
 
-    
-
+# Event listener for Discord messages
 @client.event
 async def on_message(message):
     global messages
-    if message.author == client.user or message.content == '' or message.channel.id != int(TARGET_CHANNEL_ID):
+    if message.author.bot or message.channel.id != TARGET_CHANNEL_ID:
         return
-    messages.append({'role': 'user', 'content': message.content})
-    proceed = await process_gpt_response(messages)
-    print(proceed)
-    await message.channel.send(proceed)
-    
 
-client.run(DISCORD_BOT_TOKEN)
+    user_message = message.content.strip()
+    if not user_message:
+        return
+
+    messages.append({'role': 'user', 'content': user_message})
+    response = await process_gpt_response(messages)
+    await message.channel.send(response)
+
+# Run the bot
+if __name__ == '__main__':
+    try:
+        client.run(DISCORD_BOT_TOKEN)
+    except Exception as e:
+        logging.critical(f"Failed to run the Discord bot: {e}")
