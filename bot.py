@@ -16,7 +16,7 @@ openaiClient = OpenAI(api_key=OPENAI_API_KEY)
 
 # Configuration
 LOG_PATH = 'logfile.log'
-MAX_HISTORY = 10
+MAX_HISTORY = 14
 
 # Logging setup
 logging.basicConfig(
@@ -80,8 +80,11 @@ async def process_gpt_response(messages):
         response = openaiClient.chat.completions.create(
             model=MODEL,
             messages=full_messages,
-            temperature=0.5,
-            max_tokens=500
+            temperature=0.78,
+            max_completion_tokens=6612,
+            top_p=0.82,
+            frequency_penalty=0.31,
+            presence_penalty=0.34
         )
         assistant_reply = response.choices[0].message.content
         messages.append({'role': 'assistant', 'content': assistant_reply})
