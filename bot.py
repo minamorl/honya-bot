@@ -92,7 +92,7 @@ async def process_gpt_response(messages):
                     "type": "text"
                     },
                 temperature=0.78,
-                max_completion_tokens=6612,
+                max_completion_tokens=1800,
                 top_p=0.82,
                 frequency_penalty=0.31,
                 presence_penalty=0.34
