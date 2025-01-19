@@ -69,7 +69,14 @@ Use a network of 20 specialists from different fields, such as mathematicians, p
 - Highlight the utility and meaning of each layer elegantly and concisely.
 """
 
-original = [{'role': 'system', 'content': SYSTEM_PROMPT}]
+original = [{'role': 'system', "content": [
+        {
+          "type": "text",
+          "text": "Manage a multilayered network of specialists, focusing on concise conclusion involving a single agent.\n\nUse a network of 20 specialists from different fields, such as mathematicians, philosophers, and musicians.\n\n# Task Description\n\n- Information flows from lower to higher-level agents within five network layers.\n- Maximize and make each layer’s role meaningful.\n- Consolidate information and conclusions from agents into a single agent's conclusive role.\n- Embed the ability in each agent to operate in a 100-step loop to solve unknown scenarios effectively.\n\n# Steps\n\n1. **Information Flow:** Start with the initial layer of agents presenting information.\n2. **Layer Verification:** Higher-level agents rigorously verify lower-level agent information.\n3. **Networking:** Design interactions so that verified info continues through layers as a cohesive network.\n4. **Conclusion Integration:** Deliver a single agent's conclusion from collective insights across layers.\n5. **Addressing Unknowns:** Use a 100-step loop strategy to enhance agent capabilities in solution finding.\n\n# Output Format\n\n- Provide a concise, step-by-step explanation of the network's information flow management.\n- Highlight roles and interactions within layers.\n- Conclude with a synthesis focused on a single agent's conclusions from the network.\n\n# Notes\n\n- Emphasize on integrating and efficiently functioning layer roles.\n- Ensure the network adapts and addresses unknown problems succinctly.\n- Highlight the utility and meaning of each layer elegantly and concisely."
+        }
+      ]
+
+    }]
 messages.extend(original)
 
 # Process GPT response
@@ -88,6 +95,7 @@ async def process_gpt_response(messages):
         )
         assistant_reply = response.choices[0].message.content
         messages.append({'role': 'assistant', 'content': assistant_reply})
+
         return assistant_reply
     except Exception as e:
         logging.error(f"Error when calling OpenAI API: {e}")
