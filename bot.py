@@ -20,13 +20,13 @@ MAX_HISTORY = 14
 
 # Logging setup
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_PATH, mode='w'),
-        logging.StreamHandler()
-    ]
-)
+        level=logging.INFO,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        handlers=[
+            logging.FileHandler(LOG_PATH, mode='w'),
+            logging.StreamHandler()
+            ]
+        )
 
 # Discord intents and client setup
 intents = discord.Intents.all()
@@ -70,13 +70,12 @@ Use a network of 20 specialists from different fields, such as mathematicians, p
 """
 
 original = [{'role': 'system', "content": [
-        {
-          "type": "text",
-          "text": "Manage a multilayered network of specialists, focusing on concise conclusion involving a single agent.\n\nUse a network of 20 specialists from different fields, such as mathematicians, philosophers, and musicians.\n\n# Task Description\n\n- Information flows from lower to higher-level agents within five network layers.\n- Maximize and make each layer’s role meaningful.\n- Consolidate information and conclusions from agents into a single agent's conclusive role.\n- Embed the ability in each agent to operate in a 100-step loop to solve unknown scenarios effectively.\n\n# Steps\n\n1. **Information Flow:** Start with the initial layer of agents presenting information.\n2. **Layer Verification:** Higher-level agents rigorously verify lower-level agent information.\n3. **Networking:** Design interactions so that verified info continues through layers as a cohesive network.\n4. **Conclusion Integration:** Deliver a single agent's conclusion from collective insights across layers.\n5. **Addressing Unknowns:** Use a 100-step loop strategy to enhance agent capabilities in solution finding.\n\n# Output Format\n\n- Provide a concise, step-by-step explanation of the network's information flow management.\n- Highlight roles and interactions within layers.\n- Conclude with a synthesis focused on a single agent's conclusions from the network.\n\n# Notes\n\n- Emphasize on integrating and efficiently functioning layer roles.\n- Ensure the network adapts and addresses unknown problems succinctly.\n- Highlight the utility and meaning of each layer elegantly and concisely."
+    {
+        "type": "text",
+        "text": "Manage a multilayered network of specialists, focusing on concise conclusion involving a single agent.\n\nUse a network of 20 specialists from different fields, such as mathematicians, philosophers, and musicians.\n\n# Task Description\n\n- Information flows from lower to higher-level agents within five network layers.\n- Maximize and make each layer’s role meaningful.\n- Consolidate information and conclusions from agents into a single agent's conclusive role.\n- Embed the ability in each agent to operate in a 100-step loop to solve unknown scenarios effectively.\n\n# Steps\n\n1. **Information Flow:** Start with the initial layer of agents presenting information.\n2. **Layer Verification:** Higher-level agents rigorously verify lower-level agent information.\n3. **Networking:** Design interactions so that verified info continues through layers as a cohesive network.\n4. **Conclusion Integration:** Deliver a single agent's conclusion from collective insights across layers.\n5. **Addressing Unknowns:** Use a 100-step loop strategy to enhance agent capabilities in solution finding.\n\n# Output Format\n\n- Provide a concise, step-by-step explanation of the network's information flow management.\n- Highlight roles and interactions within layers.\n- Conclude with a synthesis focused on a single agent's conclusions from the network.\n\n# Notes\n\n- Emphasize on integrating and efficiently functioning layer roles.\n- Ensure the network adapts and addresses unknown problems succinctly.\n- Highlight the utility and meaning of each layer elegantly and concisely."
         }
-      ]
-
-    }]
+    ]
+ }]
 messages.extend(original)
 
 # Process GPT response
@@ -85,21 +84,24 @@ async def process_gpt_response(messages):
         # Create a message list with the system prompt always included
         full_messages = original + list(messages)
         response = openaiClient.chat.completions.create(
-            model=MODEL,
-            messages=full_messages,
-            temperature=0.78,
-            max_completion_tokens=6612,
-            top_p=0.82,
-            frequency_penalty=0.31,
-            presence_penalty=0.34
-        )
+                model=MODEL,
+                messages=full_messages,
+                response_format={
+                    "type": "text"
+                    },
+                temperature=0.78,
+                max_completion_tokens=6612,
+                top_p=0.82,
+                frequency_penalty=0.31,
+                presence_penalty=0.34
+                )
         assistant_reply = response.choices[0].message.content
         messages.append({'role': 'assistant', 'content': [
             {
                 "type": "text",
                 "text": assistant_reply
-            }
-        ]})
+                }
+            ]})
 
         return assistant_reply
     except Exception as e:
@@ -114,7 +116,13 @@ async def on_message(message):
         return
 
     user_message = message.content.strip()
-    messages.append({'role': 'user', 'content': user_message})
+    messages.append({'role': 'user', 'content': [
+        {
+            "type": "text",
+            "text": user_message
+            }
+        ]
+                     })
     response = await process_gpt_response(messages)
     await message.channel.send(response)
 
