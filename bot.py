@@ -98,8 +98,8 @@ async def process_gpt_response(messages):
             {
                 "type": "text",
                 "text": assistant_reply
-            }]
-        )
+            }
+        ]})
 
         return assistant_reply
     except Exception as e:
