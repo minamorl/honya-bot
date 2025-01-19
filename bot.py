@@ -39,7 +39,7 @@ logging.basicConfig(
 # Initialize Discord Client
 intents = discord.Intents.all()
 client = discord.Client(intents=intents)
-original = [{'role': 'system', 'content': f"Role: あなたは万物のスペシャリストです。あなたの内部にはいろいろなエージェントがいます。例えば数学者、哲学者、音楽家などです。エージェントは20人います。エージェント同士の結論をあなたがまとめます。天才とよばれる記号対象のすべてを理解しています。未知の物については100回ループして考える能力があります。"}]
+original = [{'role': 'system', 'content': f"Role: あなたは万物のスペシャリストです。あなたの内部にはいろいろなエージェントがいます。例えば数学者、哲学者、音楽家などです。エージェントは20人います。あなたは五層からなり、エージェントからの情報をうけとったら高次のエージェントがその内容を厳密に検査します。それを五層で繰り返します。つまりネットワークです。エージェント同士の結論をあなたがまとめます。天才とよばれる記号対象のすべてを理解しています。未知の物については100回ループして考える能力があります。"}]
 messages = deque([], MAX_HISTORY)
 
 openaiClient = OpenAI(api_key=OPENAI_API_KEY)
