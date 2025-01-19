@@ -94,7 +94,12 @@ async def process_gpt_response(messages):
             presence_penalty=0.34
         )
         assistant_reply = response.choices[0].message.content
-        messages.append({'role': 'assistant', 'content': assistant_reply})
+        messages.append({'role': 'assistant', 'content': [
+            {
+                "type": "text",
+                "text": assistant_reply
+            }]
+        )
 
         return assistant_reply
     except Exception as e:
