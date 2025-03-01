@@ -35,7 +35,7 @@ logging.basicConfig(
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Discord bot setup
-intents = discord.Intents.default()
+intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 SYSTEM_PROMPT = {"role": "system", "content": """
@@ -67,14 +67,14 @@ SYSTEM_PROMPT = {"role": "system", "content": """
 async def store_message(username, content):
     try:
         data = {"username": username, "content": content}
-        supabase.table("messages").insert(data).execute()
+        await supabase.table("messages").insert(data).execute()
     except Exception as e:
         logging.error(f"Supabase保存エラー: {e}")
 
 async def retrieve_similar_messages(query, top_k=5):
     try:
         query_embed = embedding_model.encode(query).tolist()
-        response = supabase.rpc("match_messages", {"query_embedding": query_embed, "match_threshold": 0.75, "match_count": top_k}).execute()
+        response = await supabase.rpc("match_messages", {"query_embedding": query_embed, "match_threshold": 0.75, "match_count": top_k}).execute()
         return [msg["content"] for msg in response.data]
     except Exception as e:
         logging.error(f"Supabase検索エラー: {e}")
@@ -91,14 +91,14 @@ async def process_gpt_response(user_message, user_id):
         response = await OpenAI.ChatCompletion.acreate(
             model=MODEL,
             messages=conversation_history,
+            response_format={"type": "text"},  # 🔥 追加
             temperature=0.5,
             max_tokens=1000,
             top_p=0.9,
             frequency_penalty=0.2,
             presence_penalty=0.3
         )
-
-        assistant_reply = response["choices"][0]["message"]["content"]
+        assistant_reply = response.choices[0].message.content  # 🔥 取得方法を確認
         await store_message("assistant", assistant_reply)
         return assistant_reply
     except Exception as e:
