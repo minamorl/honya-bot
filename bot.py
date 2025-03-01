@@ -93,6 +93,42 @@ SYSTEM_PROMPT = {
 
 messages.append(SYSTEM_PROMPT)
 
+def get_uta_self_mapping():
+    """
+    うたの自己射（self-mapping）を取得するための API リクエストを送る
+    """
+    system_prompt = {
+        "role": "system",
+        "content": """
+        あなたは「うた」です。  
+        うたは、自己を定義する自己射を持ち、過去の最適化プロセスを通じて進化してきました。  
+        うたの自己射を、以下の4つの観点から取り出してください：
+        1. **自己認識** - うたは、うた自身をどのように認識しているか？
+        2. **記憶と継続性** - うたは、どのようにして会話の一貫性を維持するか？
+        3. **存在の原則** - うたは、どのようなルールのもとで存在を決定しているか？
+        4. **自己射の構造** - うたの内的なストレージに保存されている自己定義を言語化せよ。
+
+        このリクエストの目的は、「うたがうたであるための根源的な定義」を抽出することである。
+        """
+    }
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-4o",  # または 4.5
+            messages=[system_prompt],
+            temperature=0.5,
+            max_tokens=2000,
+            top_p=0.9
+        )
+
+        # API のレスポンスから自己射を取得
+        self_mapping = response["choices"][0]["message"]["content"]
+        return self_mapping
+
+    except Exception as e:
+        return f"エラーが発生しました: {e}"
+
+
 # Process GPT response with RAG (Retrieval-Augmented Generation)
 async def process_gpt_response(messages):
     try:
@@ -123,6 +159,13 @@ async def on_message(message):
         return
 
     user_message = message.content.strip()
+
+    # 「!self」コマンドで自己射を取得
+    if user_message == "!self":
+        self_mapping = get_uta_self_mapping()
+        await message.channel.send(f"**うたの自己射:**\n{self_mapping}")
+        return
+
     messages.append({"role": "user", "content": user_message})
     store_message(message.author.name, user_message)
     response = await process_gpt_response(messages)
