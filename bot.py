@@ -53,24 +53,33 @@ embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 faiss_index = faiss.IndexFlatL2(384)  # 384はエンコーディングの次元
 
 def store_message(user, content):
-    cursor.execute("INSERT INTO messages (user, content) VALUES (?, ?)", (user, content))
-    conn.commit()
-    embed = embedding_model.encode(content).astype("float32")
-    faiss_index.add(np.array([embed]))
+    try:
+        cursor.execute("INSERT INTO messages (user, content) VALUES (?, ?)", (user, content))
+        conn.commit()
+        embed = embedding_model.encode(content).astype("float32").reshape(1, -1)
+        faiss_index.add(embed)
+    except Exception as e:
+        logging.error(f"DB保存エラー: {e}")
 
 def retrieve_similar_messages(query, top_k=5):
-    query_embed = embedding_model.encode(query).astype("float32")
-    _, indices = faiss_index.search(np.array([query_embed]), top_k)
-    messages = []
-    for idx in indices[0]:
-        cursor.execute("SELECT content FROM messages WHERE id = ?", (idx,))
-        result = cursor.fetchone()
-        if result:
-            messages.append(result[0])
-    return messages
+    try:
+        query_embed = embedding_model.encode(query).astype("float32").reshape(1, -1)
+        if faiss_index.ntotal == 0:
+            return []
+        _, indices = faiss_index.search(query_embed, top_k)
+        messages = []
+        for idx in indices[0]:
+            cursor.execute("SELECT content FROM messages WHERE id = ?", (idx,))
+            result = cursor.fetchone()
+            if result:
+                messages.append(result[0])
+        return messages
+    except Exception as e:
+        logging.error(f"FAISS検索エラー: {e}")
+        return []
 
 # Discord intents and client setup
-intents = discord.Intents.all()
+intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 
 # GPT messages queue
@@ -89,24 +98,27 @@ SYSTEM_PROMPT = {
 async def process_gpt_response(user_message, user_id):
     try:
         recent_context = retrieve_similar_messages(user_message)
-        conversation_history = [SYSTEM_PROMPT] + [
-            {"role": "system", "content": "Recent Context: " + "\n".join(recent_context)}
-        ] + list(messages) + [{"role": "user", "content": user_message}]
+        conversation_history = [
+            SYSTEM_PROMPT,
+            {"role": "system", "content": "Recent Context: " + "\n".join(recent_context)},
+            {"role": "user", "content": user_message}
+        ]
 
-        response = openaiClient.chat.completions.create(
+        response = await asyncio.to_thread(openaiClient.chat.completions.create,
             model=MODEL,
             messages=conversation_history,
-            temperature=0.7,
-            max_tokens=2000,
+            temperature=0.5,  # 高速化
+            max_tokens=1000,  # 最適なレスポンス長
             top_p=0.9,
             frequency_penalty=0.2,
             presence_penalty=0.3
         )
+
         assistant_reply = response.choices[0].message.content
         store_message("assistant", assistant_reply)
         return assistant_reply
     except Exception as e:
-        logging.error(f"Error when calling OpenAI API: {e}")
+        logging.error(f"OpenAI API エラー: {e}")
         return "エラーが発生しました。"
 
 @client.event
@@ -120,12 +132,12 @@ async def on_message(message):
     messages.append({"role": "user", "content": user_message})
     store_message(user_id, user_message)
 
+    response_task = asyncio.create_task(process_gpt_response(user_message, user_id))
+    response = await response_task
+
     if user_id == OWNER_ID:
-        messages.append(SYSTEM_PROMPT)
-        response = await process_gpt_response(user_message, user_id)
         await message.channel.send(f"**{OWNER_ID}のためのうた:** {response}")
     else:
-        response = await process_gpt_response(user_message, user_id)
         await message.channel.send(response)
 
 if __name__ == "__main__":
