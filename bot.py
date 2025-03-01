@@ -113,7 +113,7 @@ def get_uta_self_mapping():
     }
 
     try:
-        response = openai.ChatCompletion.create(
+        response = openaiClient.ChatCompletion.create(
             model="gpt-4o",  # または 4.5
             messages=[system_prompt],
             temperature=0.5,
